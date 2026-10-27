@@ -75,7 +75,11 @@ export interface BurnEvent {
 export interface PayoutEvent {
   id: string;
   wallet: Address;
+  /** Total sent: holder rewards plus creator earnings. */
   lamports: U64String;
+  holderLamports: U64String;
+  /** Creator earnings in this payout (coins whose creator fees justi.fun pays). */
+  creatorLamports: U64String;
   signature: string;
   ts: number;
 }

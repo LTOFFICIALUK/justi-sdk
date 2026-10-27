@@ -170,12 +170,25 @@ export class JustiApi {
   }
 
   /**
-   * Creator stats: coins, fees earned and claimable (read live from the pools).
+   * Creator stats: coins, creator fees earned, paid and pending.
+   *
+   * On current configs (creatorPaidBy pad) the creator's rate is tracked from every trade (normal fee only, never the sniper-window extra) and justi.fun pays it to the creator wallet automatically after each fee claim; POST /v1/creators/{wallet}/payout pays it now. On legacy configs (pool) the creator claims from the pool; claimable is read live.
    *
    * `GET /v1/creators/{wallet}`, rate class `read`, API key optional.
    */
   getCreator(wallet: string, opts?: RequestOptions): Promise<T.CreatorStats> {
     return this._req<T.CreatorStats>("GET", `/v1/creators/${encodeURIComponent(wallet)}`, undefined, undefined, opts);
+  }
+
+  /**
+   * Pay a creator what they are owed now.
+   *
+   * For coins on current configs (creatorPaidBy pad). Claims the coin's pool fees now, splits them (the creator's normal share is credited) and sends the wallet's owed balance to the creator wallet. No signature needed: money only goes to the coin's creator. One request per wallet every 2 minutes; payouts also run on their own.
+   *
+   * `POST /v1/creators/{wallet}/payout`, rate class `submit`, API key optional.
+   */
+  payCreator(wallet: string, body: T.PayCreatorBody, opts?: RequestOptions): Promise<T.CreatorPayout> {
+    return this._req<T.CreatorPayout>("POST", `/v1/creators/${encodeURIComponent(wallet)}/payout`, undefined, body, opts);
   }
 
   /**
@@ -516,7 +529,15 @@ export const operations = {
     "auth": "optional",
     "rateClass": "read",
     "tag": "Rewards",
-    "summary": "Creator stats: coins, fees earned and claimable (read live from the pools)"
+    "summary": "Creator stats: coins, creator fees earned, paid and pending"
+  },
+  "payCreator": {
+    "method": "POST",
+    "path": "/v1/creators/{wallet}/payout",
+    "auth": "optional",
+    "rateClass": "submit",
+    "tag": "Rewards",
+    "summary": "Pay a creator what they are owed now"
   },
   "getPlatformStats": {
     "method": "GET",

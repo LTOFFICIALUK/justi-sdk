@@ -75,6 +75,32 @@ export interface Candles {
   nextBefore: number | null;
 }
 
+export interface CreatorPayout {
+  /** Base58 Solana address. */
+  wallet: Address;
+  claims: {
+    /** Base58 Solana address. */
+    mint: Address;
+    signature: string;
+    state: string;
+  }[];
+  payout: {
+    id: string;
+    /** Unsigned integer as a decimal string (may exceed 2^53). */
+    lamports: U64String;
+    /** Unsigned integer as a decimal string (may exceed 2^53). */
+    creatorLamports: U64String;
+    status: string;
+    signature: string | null;
+  } | null;
+  /** Unsigned integer as a decimal string (may exceed 2^53). */
+  creatorOwedLamports: U64String;
+  /** Unsigned integer as a decimal string (may exceed 2^53). */
+  creatorPaidLamports: U64String;
+  /** A worker held the lock; the payout runs on its own shortly. */
+  busy: boolean;
+}
+
 export interface CreatorStats {
   /** Base58 Solana address. */
   wallet: Address;
@@ -82,11 +108,24 @@ export interface CreatorStats {
     coins: number;
     /** Unsigned integer as a decimal string (may exceed 2^53). */
     earnedLamports: U64String;
-    /** Unsigned integer as a decimal string (may exceed 2^53). */
+    /** Legacy (pool) coins only: claimable from the pool with the creator's wallet. */
     claimableLamports: U64String;
+    /** Creator fees already in the creator wallet. */
+    paidLamports: U64String;
+    /** Pad-paid coins: earned and not yet paid. Paid automatically. */
+    pendingLamports: U64String;
     /** Unsigned integer as a decimal string (may exceed 2^53). */
     holderRewardsLamports: U64String;
   };
+  /** Creator payouts sent by justi.fun, newest first. */
+  payouts: Array<{
+    /** Unsigned integer as a decimal string (may exceed 2^53). */
+    lamports: U64String;
+    status: "planned" | "sent" | "confirmed";
+    signature: Signature | null;
+    /** Unix time in seconds. */
+    at: number;
+  }>;
   coins: Array<{
     /** Base58 Solana address. */
     mint: Address;
@@ -104,12 +143,17 @@ export interface CreatorStats {
     marketCapSol: number;
     holderCount: number;
     trades: number;
+    creatorPaidBy: "pad" | "pool";
     /** Unsigned integer as a decimal string (may exceed 2^53). */
     earnedLamports: U64String;
     /** Unsigned integer as a decimal string (may exceed 2^53). */
     claimableLamports: U64String;
     /** Unsigned integer as a decimal string (may exceed 2^53). */
     claimedLamports: U64String;
+    /** Unsigned integer as a decimal string (may exceed 2^53). */
+    paidLamports: U64String;
+    /** Unsigned integer as a decimal string (may exceed 2^53). */
+    pendingLamports: U64String;
     /** Unsigned integer as a decimal string (may exceed 2^53). */
     holderRewardsLamports: U64String;
   }>;
@@ -139,8 +183,10 @@ export interface FeeSplit {
   platformPct: number;
   /** Meteora protocol share (20% of the pool fee). */
   meteoraPct: number;
-  /** creatorTradingFeePercentage on the DBC config. */
+  /** creatorTradingFeePercentage on the DBC config: 0 on current configs, where justi.fun pays the creator. */
   creatorOnchainPercent: number;
+  /** pad: the creator's rate is tracked from every trade and paid by justi.fun automatically (never any share of the sniper-window extra). pool: legacy configs, the creator claims from the pool. */
+  creatorPaidBy: "pad" | "pool";
   /** Pool fee numerator over 1e9 after the window. */
   poolFeeNumerator: U64String;
 }
@@ -234,6 +280,7 @@ export interface LaunchBuilt {
     holdersPct: number;
     protocolPct: number;
     creatorOnchainPercent: number;
+    creatorPaidBy: "pad" | "pool";
     /** Unsigned integer as a decimal string (may exceed 2^53). */
     poolFeeNumerator: U64String;
   };
@@ -250,6 +297,10 @@ export interface LaunchBuilt {
   metadataUri: string;
   image: string;
   transaction: string;
+  /** Present when the launch was built hidden (admin). */
+  hidden?: boolean;
+  /** Present when built on the test config (admin). */
+  testConfig?: boolean;
 }
 
 export interface LaunchRequest {
@@ -274,6 +325,10 @@ export interface LaunchRequest {
   devBuyLamports?: U64String;
   /** Custom (vanity) mint public key. The integrator's client holds the keypair and signs the returned transaction with it. Never send the secret key. Without it the server uses a ...JUST key from its pool (already signed in). */
   mint?: Address;
+  /** Admin only (X-Admin-Token header): the coin never appears on the board, live feeds, token list or stats. Its page and APIs by mint still work. */
+  hidden?: boolean;
+  /** Admin only (X-Admin-Token header): launch on the server's test config (holders tier, low graduation threshold). Always hidden. */
+  testConfig?: boolean;
 }
 
 export interface LaunchSubmitted {
@@ -305,8 +360,10 @@ export interface Pad {
     platformPct: number;
     /** Meteora protocol share (20% of the pool fee). */
     meteoraPct: number;
-    /** creatorTradingFeePercentage on the DBC config. */
+    /** creatorTradingFeePercentage on the DBC config: 0 on current configs, where justi.fun pays the creator. */
     creatorOnchainPercent: number;
+    /** pad: the creator's rate is tracked from every trade and paid by justi.fun automatically (never any share of the sniper-window extra). pool: legacy configs, the creator claims from the pool. */
+    creatorPaidBy: "pad" | "pool";
     /** Pool fee numerator over 1e9 after the window. */
     poolFeeNumerator: U64String;
     creatorBps: number;
@@ -423,13 +480,43 @@ export interface Protocol {
     platformPct: number;
     /** Meteora protocol share (20% of the pool fee). */
     meteoraPct: number;
-    /** creatorTradingFeePercentage on the DBC config. */
+    /** creatorTradingFeePercentage on the DBC config: 0 on current configs, where justi.fun pays the creator. */
     creatorOnchainPercent: number;
+    /** pad: the creator's rate is tracked from every trade and paid by justi.fun automatically (never any share of the sniper-window extra). pool: legacy configs, the creator claims from the pool. */
+    creatorPaidBy: "pad" | "pool";
     /** Pool fee numerator over 1e9 after the window. */
     poolFeeNumerator: U64String;
     address: Address | null;
     creatorBps: number;
     holderBps: number;
+    /** Earlier config set: coins on it still trade, no new launches. */
+    legacy: boolean;
+  }>;
+  /** Earlier configs (creator share paid on chain). Same fee claimer, so the same tagging rule applies. */
+  legacyConfigs: Array<{
+    /** Tier key, e.g. creator-100, holders, split-50. */
+    tier: string;
+    /** Who earns the fee: the creator, holders, or both. */
+    mode: "creator" | "holders" | "split";
+    /** Total pool fee after the opening window, percent of the SOL side. */
+    totalPct: number;
+    creatorPct: number;
+    holdersPct: number;
+    /** Pad share. 75% of it buys and burns $JUSTI, 25% goes to the dev wallet. */
+    platformPct: number;
+    /** Meteora protocol share (20% of the pool fee). */
+    meteoraPct: number;
+    /** creatorTradingFeePercentage on the DBC config: 0 on current configs, where justi.fun pays the creator. */
+    creatorOnchainPercent: number;
+    /** pad: the creator's rate is tracked from every trade and paid by justi.fun automatically (never any share of the sniper-window extra). pool: legacy configs, the creator claims from the pool. */
+    creatorPaidBy: "pad" | "pool";
+    /** Pool fee numerator over 1e9 after the window. */
+    poolFeeNumerator: U64String;
+    address: Address | null;
+    creatorBps: number;
+    holderBps: number;
+    /** Earlier config set: coins on it still trade, no new launches. */
+    legacy: boolean;
   }>;
   feeClaimer: Address | null;
   partnerMetadata: Address | null;
@@ -717,10 +804,18 @@ export interface TokenDetail {
     holderWallets: number;
     /** Unsigned integer as a decimal string (may exceed 2^53). */
     burnedTokens: U64String;
-    /** Unsigned integer as a decimal string (may exceed 2^53). */
+    /** pad: justi.fun pays the creator its rate from every trade automatically; pool: legacy, the creator claims from the pool. */
+    creatorPaidBy: "pad" | "pool";
+    /** Creator fees already in the creator wallet. */
     creatorClaimedLamports: U64String;
-    /** Unsigned integer as a decimal string (may exceed 2^53). */
+    /** Legacy (pool) coins: claimable from the pool. 0 on pad-paid coins. */
     creatorUnclaimedLamports: U64String;
+    /** Creator rate on every trade so far (normal fee only, never the sniper-window extra). */
+    creatorEarnedLamports: U64String;
+    /** Unsigned integer as a decimal string (may exceed 2^53). */
+    creatorPaidLamports: U64String;
+    /** Pad-paid coins: earned, not yet paid. Paid automatically after the next fee claim. */
+    creatorPendingLamports: U64String;
   };
   dex: {
     paid: boolean;
@@ -1059,6 +1154,12 @@ export interface ListPayoutsQuery {
   limit?: number;
   /** nextCursor from the previous page. */
   cursor?: string;
+}
+
+/** Request body of payCreator. */
+export interface PayCreatorBody {
+  /** Only this coin. Default: every coin of this creator. */
+  mint?: Address;
 }
 
 /** Query parameters of getQuote. */
