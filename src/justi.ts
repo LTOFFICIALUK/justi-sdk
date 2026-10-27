@@ -11,7 +11,7 @@ import { verifyWebhook, parseWebhook, type VerifyOptions } from "./webhook.js";
 import { openSubscription, type SubscribeOptions, type Subscription } from "./ws.js";
 
 /** Production API. */
-export const DEFAULT_BASE_URL = "https://server-production-cc13.up.railway.app";
+export const DEFAULT_BASE_URL = "https://api.justi.fun";
 /** The site, for coin links. */
 export const SITE_URL = "https://justi.fun";
 export const SOL_DECIMALS = 9;

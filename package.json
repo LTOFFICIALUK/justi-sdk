@@ -28,7 +28,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "spec:pull": "curl -fsS https://server-production-cc13.up.railway.app/v1/openapi.json -o openapi.json",
+    "spec:pull": "curl -fsS https://api.justi.fun/v1/openapi.json -o openapi.json",
     "gen": "node scripts/gen.mjs",
     "build": "rm -rf dist && tsc -p tsconfig.json && tsc -p tsconfig.cjs.json && node scripts/fix-dist.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",

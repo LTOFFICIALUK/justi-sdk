@@ -4,7 +4,7 @@ TypeScript SDK for [justi.fun](https://justi.fun), a fair Solana launchpad on Me
 Launch a coin, quote, buy and sell, read coins and trades, stream live events and verify webhooks.
 
 - Zero runtime dependencies. Works in Node 18+, browsers, Bun, Deno and edge runtimes.
-- ESM and CommonJS builds with full types, generated from the live [OpenAPI spec](https://server-production-cc13.up.railway.app/v1/openapi.json).
+- ESM and CommonJS builds with full types, generated from the live [OpenAPI spec](https://api.justi.fun/v1/openapi.json).
 - Signs with a Keypair, a secret key, a browser wallet adapter, or your own signer. Keys never leave your process.
 
 Docs: https://docs.justi.fun
