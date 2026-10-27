@@ -1,0 +1,6 @@
+{
+ "note": "A real delivery body from a local test run, re-signed with a test-only secret.",
+ "secret": "test-only-fixture-secret-0001",
+ "signature": "t=1793110017,v1=72639501deb94f771370cc65ccc90ea9f88591a3f827fda8b861d15a8ff47d82",
+ "body": "{\"id\":\"evt_test_72f2e7c98027\",\"type\":\"webhook.test\",\"createdAt\":1793110017,\"data\":{\"webhookId\":\"a34b33f1-d973-4eca-975d-39c89cafa417\",\"message\":\"Test delivery from justi.fun.\"}}"
+}

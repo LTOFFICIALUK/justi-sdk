@@ -1,0 +1,45 @@
+{
+  "name": "@justifun/sdk",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for justi.fun, a fair Solana launchpad on Meteora. Launch coins, quote, buy and sell, read coins and trades, stream live events and verify webhooks. Zero dependencies.",
+  "keywords": ["solana", "launchpad", "token launch", "memecoin", "meteora", "dbc", "bonding curve", "sdk", "justi.fun", "swap", "webhooks"],
+  "homepage": "https://docs.justi.fun",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.ts",
+        "default": "./dist/cjs/index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": ["dist", "openapi.json", "README.md", "LICENSE"],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "spec:pull": "curl -fsS https://server-production-cc13.up.railway.app/v1/openapi.json -o openapi.json",
+    "gen": "node scripts/gen.mjs",
+    "build": "rm -rf dist && tsc -p tsconfig.json && tsc -p tsconfig.cjs.json && node scripts/fix-dist.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "test": "node --import tsx --test test/*.test.ts",
+    "test:live": "node --import tsx test/live.ts",
+    "prepublishOnly": "npm run gen && npm run typecheck && npm test && npm run build"
+  },
+  "devDependencies": {
+    "@solana/web3.js": "^1.98.0",
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
