@@ -1,4 +1,4 @@
-// Generated from the justi.fun OpenAPI spec (justi.fun API 1.0.0). Do not edit.
+// Generated from the justi.fun OpenAPI spec (justi.fun API 1.1.0). Do not edit.
 // Regenerate with `npm run gen`.
 
 import type * as T from "./types.js";
@@ -31,7 +31,7 @@ export class JustiApi {
   }
 
   /**
-   * Pad config, fee tiers, fee splits and the sniper window schedule.
+   * Pad config, fee tiers, fee splits and the launch block sniper fee.
    *
    * `GET /v1/pad`, rate class `read`, API key optional.
    */
@@ -78,7 +78,7 @@ export class JustiApi {
   }
 
   /**
-   * Coin detail: metadata, safety facts, curve, graduation, sniper window, totals.
+   * Coin detail: metadata, safety facts, curve, graduation, sniper fee, totals.
    *
    * `GET /v1/tokens/{mint}`, rate class `read`, API key optional.
    */
@@ -134,7 +134,7 @@ export class JustiApi {
   }
 
   /**
-   * All buybacks and burns ($JUSTI and sniper-window coin burns).
+   * All buybacks and burns ($JUSTI and sniper fee coin burns).
    *
    * `GET /v1/buybacks`, rate class `read`, API key optional.
    */
@@ -172,7 +172,7 @@ export class JustiApi {
   /**
    * Creator stats: coins, creator fees earned, paid and pending.
    *
-   * On current configs (creatorPaidBy pad) the creator's rate is tracked from every trade (normal fee only, never the sniper-window extra) and justi.fun pays it to the creator wallet automatically after each fee claim; POST /v1/creators/{wallet}/payout pays it now. On legacy configs (pool) the creator claims from the pool; claimable is read live.
+   * On current configs (creatorPaidBy pad) the creator's rate is tracked from every trade (normal fee only, never the sniper fee extra) and justi.fun pays it to the creator wallet automatically after each fee claim; POST /v1/creators/{wallet}/payout pays it now. On legacy configs (pool) the creator claims from the pool; claimable is read live.
    *
    * `GET /v1/creators/{wallet}`, rate class `read`, API key optional.
    */
@@ -270,7 +270,7 @@ export class JustiApi {
   /**
    * Build a launch exactly like the site does.
    *
-   * Same validation as the site: copy rule, 15% dev-buy cap, tier configs, sniper window, 10 launches per wallet a day. Returns an unsigned (by the wallet) v0 create transaction. signers lists every required signature: the payer (wallet) always; the mint is already signed for pool keys, or must be signed by your client with your custom mint keypair. Then POST /v1/launches/{id}/submit with the fully signed transaction within about a minute.
+   * Same validation as the site: copy rule, 15% dev-buy cap, tier configs, launch block fee, 10 launches per wallet a day. Returns an unsigned (by the wallet) v0 create transaction. signers lists every required signature: the payer (wallet) always; the mint is already signed for pool keys, or must be signed by your client with your custom mint keypair. Then POST /v1/launches/{id}/submit with the fully signed transaction within about a minute.
    *
    * `POST /v1/launches`, rate class `launch`, API key optional.
    */
@@ -409,7 +409,7 @@ export const operations = {
     "auth": "optional",
     "rateClass": "read",
     "tag": "Protocol",
-    "summary": "Pad config, fee tiers, fee splits and the sniper window schedule"
+    "summary": "Pad config, fee tiers, fee splits and the launch block sniper fee"
   },
   "getStatus": {
     "method": "GET",
@@ -449,7 +449,7 @@ export const operations = {
     "auth": "optional",
     "rateClass": "read",
     "tag": "Tokens",
-    "summary": "Coin detail: metadata, safety facts, curve, graduation, sniper window, totals"
+    "summary": "Coin detail: metadata, safety facts, curve, graduation, sniper fee, totals"
   },
   "getTokenMetadata": {
     "method": "GET",
@@ -497,7 +497,7 @@ export const operations = {
     "auth": "optional",
     "rateClass": "read",
     "tag": "Platform",
-    "summary": "All buybacks and burns ($JUSTI and sniper-window coin burns)"
+    "summary": "All buybacks and burns ($JUSTI and sniper fee coin burns)"
   },
   "getTokenRewards": {
     "method": "GET",

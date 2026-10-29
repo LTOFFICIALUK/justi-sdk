@@ -1,4 +1,4 @@
-// Generated from the justi.fun OpenAPI spec (justi.fun API 1.0.0). Do not edit.
+// Generated from the justi.fun OpenAPI spec (justi.fun API 1.1.0). Do not edit.
 // Regenerate with `npm run gen`.
 
 /** Base58 Solana address. */
@@ -26,7 +26,7 @@ export interface Buyback {
   /** Base58 Solana address. */
   mint: Address;
   ticker: string | null;
-  /** justi: $JUSTI buyback. coin: sniper-window burn of this coin. */
+  /** justi: $JUSTI buyback. coin: sniper fee burn of this coin. */
   kind: "justi" | "coin";
   status: "planned" | "swapped" | "burned" | "held";
   /** Unsigned integer as a decimal string (may exceed 2^53). */
@@ -175,7 +175,7 @@ export interface FeeSplit {
   tier: string;
   /** Who earns the fee: the creator, holders, or both. */
   mode: "creator" | "holders" | "split";
-  /** Total pool fee after the opening window, percent of the SOL side. */
+  /** Normal pool fee, percent of the SOL side (every trade after the launch block; after the 5-second window on older coins). */
   totalPct: number;
   creatorPct: number;
   holdersPct: number;
@@ -185,9 +185,9 @@ export interface FeeSplit {
   meteoraPct: number;
   /** creatorTradingFeePercentage on the DBC config: 0 on current configs, where justi.fun pays the creator. */
   creatorOnchainPercent: number;
-  /** pad: the creator's rate is tracked from every trade and paid by justi.fun automatically (never any share of the sniper-window extra). pool: legacy configs, the creator claims from the pool. */
+  /** pad: the creator's rate is tracked from every trade and paid by justi.fun automatically (never any share of the sniper fee extra). pool: legacy configs, the creator claims from the pool. */
   creatorPaidBy: "pad" | "pool";
-  /** Pool fee numerator over 1e9 after the window. */
+  /** Normal pool fee numerator over 1e9. */
   poolFeeNumerator: U64String;
 }
 
@@ -249,6 +249,15 @@ export interface Launch {
   createdAt: number;
   /** Unix time in seconds. */
   updatedAt: number;
+}
+
+export interface LaunchBlock {
+  /** Slots at the launch fee: 1, the launch block itself. */
+  slots: number;
+  /** Fee in the launch block: 99, the Meteora maximum. */
+  feePct: number;
+  /** This tier's normal fee from the next slot. */
+  thenPct?: number;
 }
 
 export interface LaunchBuilt {
@@ -352,7 +361,7 @@ export interface Pad {
     tier: string;
     /** Who earns the fee: the creator, holders, or both. */
     mode: "creator" | "holders" | "split";
-    /** Total pool fee after the opening window, percent of the SOL side. */
+    /** Normal pool fee, percent of the SOL side (every trade after the launch block; after the 5-second window on older coins). */
     totalPct: number;
     creatorPct: number;
     holdersPct: number;
@@ -362,9 +371,9 @@ export interface Pad {
     meteoraPct: number;
     /** creatorTradingFeePercentage on the DBC config: 0 on current configs, where justi.fun pays the creator. */
     creatorOnchainPercent: number;
-    /** pad: the creator's rate is tracked from every trade and paid by justi.fun automatically (never any share of the sniper-window extra). pool: legacy configs, the creator claims from the pool. */
+    /** pad: the creator's rate is tracked from every trade and paid by justi.fun automatically (never any share of the sniper fee extra). pool: legacy configs, the creator claims from the pool. */
     creatorPaidBy: "pad" | "pool";
-    /** Pool fee numerator over 1e9 after the window. */
+    /** Normal pool fee numerator over 1e9. */
     poolFeeNumerator: U64String;
     creatorBps: number;
     holderBps: number;
@@ -379,9 +388,13 @@ export interface Pad {
     devWalletPct: number;
   };
   meteoraSharePct: number;
+  /** Sniper fee of new launches. block: only the launch block pays 99%, every later buy the normal fee. */
   sniperWindow: {
+    /** block: current configs. Only the launch block (the slot of the create transaction) pays 99%; every buy from the next slot pays the normal fee. window: older coins, 50% in the first second falling to the normal fee over 5 seconds. The dev buy inside the create transaction pays the normal fee under both. */
+    rule: SniperRule;
     seconds: number;
     startPct: number;
+    launchBlock: LaunchBlock | null;
     extraSplit: {
       burnCoinPct: number;
       burnJustiPct: number;
@@ -472,7 +485,7 @@ export interface Protocol {
     tier: string;
     /** Who earns the fee: the creator, holders, or both. */
     mode: "creator" | "holders" | "split";
-    /** Total pool fee after the opening window, percent of the SOL side. */
+    /** Normal pool fee, percent of the SOL side (every trade after the launch block; after the 5-second window on older coins). */
     totalPct: number;
     creatorPct: number;
     holdersPct: number;
@@ -482,23 +495,25 @@ export interface Protocol {
     meteoraPct: number;
     /** creatorTradingFeePercentage on the DBC config: 0 on current configs, where justi.fun pays the creator. */
     creatorOnchainPercent: number;
-    /** pad: the creator's rate is tracked from every trade and paid by justi.fun automatically (never any share of the sniper-window extra). pool: legacy configs, the creator claims from the pool. */
+    /** pad: the creator's rate is tracked from every trade and paid by justi.fun automatically (never any share of the sniper fee extra). pool: legacy configs, the creator claims from the pool. */
     creatorPaidBy: "pad" | "pool";
-    /** Pool fee numerator over 1e9 after the window. */
+    /** Normal pool fee numerator over 1e9. */
     poolFeeNumerator: U64String;
     address: Address | null;
     creatorBps: number;
     holderBps: number;
+    /** block: current configs. Only the launch block (the slot of the create transaction) pays 99%; every buy from the next slot pays the normal fee. window: older coins, 50% in the first second falling to the normal fee over 5 seconds. The dev buy inside the create transaction pays the normal fee under both. */
+    sniperRule: SniperRule;
     /** Earlier config set: coins on it still trade, no new launches. */
     legacy: boolean;
   }>;
-  /** Earlier configs (creator share paid on chain). Same fee claimer, so the same tagging rule applies. */
+  /** Earlier config sets (the 5-second window rule; the first set also pays the creator on chain). Same fee claimer, so the same tagging rule applies. */
   legacyConfigs: Array<{
     /** Tier key, e.g. creator-100, holders, split-50. */
     tier: string;
     /** Who earns the fee: the creator, holders, or both. */
     mode: "creator" | "holders" | "split";
-    /** Total pool fee after the opening window, percent of the SOL side. */
+    /** Normal pool fee, percent of the SOL side (every trade after the launch block; after the 5-second window on older coins). */
     totalPct: number;
     creatorPct: number;
     holdersPct: number;
@@ -508,13 +523,15 @@ export interface Protocol {
     meteoraPct: number;
     /** creatorTradingFeePercentage on the DBC config: 0 on current configs, where justi.fun pays the creator. */
     creatorOnchainPercent: number;
-    /** pad: the creator's rate is tracked from every trade and paid by justi.fun automatically (never any share of the sniper-window extra). pool: legacy configs, the creator claims from the pool. */
+    /** pad: the creator's rate is tracked from every trade and paid by justi.fun automatically (never any share of the sniper fee extra). pool: legacy configs, the creator claims from the pool. */
     creatorPaidBy: "pad" | "pool";
-    /** Pool fee numerator over 1e9 after the window. */
+    /** Normal pool fee numerator over 1e9. */
     poolFeeNumerator: U64String;
     address: Address | null;
     creatorBps: number;
     holderBps: number;
+    /** block: current configs. Only the launch block (the slot of the create transaction) pays 99%; every buy from the next slot pays the normal fee. window: older coins, 50% in the first second falling to the normal fee over 5 seconds. The dev buy inside the create transaction pays the normal fee under both. */
+    sniperRule: SniperRule;
     /** Earlier config set: coins on it still trade, no new launches. */
     legacy: boolean;
   }>;
@@ -565,9 +582,11 @@ export interface Quote {
     totalLamports: U64String;
     /** Fee as percent of the trade on the fee side. */
     pct: number;
-    /** Seconds left in the opening sniper window. */
+    /** Older coins (window rule): seconds left in the 5-second sniper window. 0 on current coins. */
     windowSecondsLeft: number;
-    /** Part of total above the normal tier fee (sniper window). */
+    /** Current coins (block rule): true while the coin is still in its launch block and a buy pays 99%. False from the next slot on. */
+    launchBlock: boolean;
+    /** Part of total above the normal tier fee (the sniper fee). */
     windowExtra: U64String;
     /** Where the fee goes. Sums to total. */
     parts: {
@@ -616,17 +635,24 @@ export interface Safety {
 /** Base58 transaction signature. */
 export type Signature = string;
 
+/** block: current configs. Only the launch block (the slot of the create transaction) pays 99%; every buy from the next slot pays the normal fee. window: older coins, 50% in the first second falling to the normal fee over 5 seconds. The dev buy inside the create transaction pays the normal fee under both. */
+export type SniperRule = "block" | "window";
+
 export interface SniperWindow {
-  /** Length of the opening window. */
+  /** block: current configs. Only the launch block (the slot of the create transaction) pays 99%; every buy from the next slot pays the normal fee. window: older coins, 50% in the first second falling to the normal fee over 5 seconds. The dev buy inside the create transaction pays the normal fee under both. */
+  rule: SniperRule;
+  /** window rule: length of the opening window (5). block rule: 0. */
   seconds: number;
-  /** Fee at second 0. */
+  /** Fee at the first moment: 99 in the launch block (block), 50 at second 0 (window). */
   startPct: number;
-  /** Fee for each second of the window for this tier; after the last entry the tier fee applies. */
+  /** window rule: fee for each second of the window for this tier; after the last entry the tier fee applies. Empty on the block rule. */
   schedule: {
     second: number;
     feePct: number;
   }[];
-  /** How the pad's share of the fee above the normal rate is split. */
+  /** block rule: the launch block fee. Null on the window rule. */
+  launchBlock: LaunchBlock | null;
+  /** How the fee above the normal rate is split. block: 20% buys back and burns the coin, 50% buys back and burns $JUSTI, 30% platform. window: 50/30/20. */
   extraSplit: {
     burnCoinPct: number;
     burnJustiPct: number;
@@ -737,6 +763,8 @@ export interface TokenDetail {
   /** Meteora DAMM v2 pool after graduation. */
   dammPool: Address | null;
   fees: FeeSplit;
+  /** block: current configs. Only the launch block (the slot of the create transaction) pays 99%; every buy from the next slot pays the normal fee. window: older coins, 50% in the first second falling to the normal fee over 5 seconds. The dev buy inside the create transaction pays the normal fee under both. */
+  sniperRule: SniperRule;
   /** Share of the graduation threshold raised, 0 to 100. */
   curveProgressPct: number;
   /** SOL per whole token, from the pool's sqrt price. */
@@ -772,27 +800,32 @@ export interface TokenDetail {
     migrationSignature: string | null;
   };
   sniperWindow: {
-    /** Length of the opening window. */
+    /** block: current configs. Only the launch block (the slot of the create transaction) pays 99%; every buy from the next slot pays the normal fee. window: older coins, 50% in the first second falling to the normal fee over 5 seconds. The dev buy inside the create transaction pays the normal fee under both. */
+    rule: SniperRule;
+    /** window rule: length of the opening window (5). block rule: 0. */
     seconds: number;
-    /** Fee at second 0. */
+    /** Fee at the first moment: 99 in the launch block (block), 50 at second 0 (window). */
     startPct: number;
-    /** Fee for each second of the window for this tier; after the last entry the tier fee applies. */
+    /** window rule: fee for each second of the window for this tier; after the last entry the tier fee applies. Empty on the block rule. */
     schedule: {
       second: number;
       feePct: number;
     }[];
-    /** How the pad's share of the fee above the normal rate is split. */
+    /** block rule: the launch block fee. Null on the window rule. */
+    launchBlock: LaunchBlock | null;
+    /** How the fee above the normal rate is split. block: 20% buys back and burns the coin, 50% buys back and burns $JUSTI, 30% platform. window: 50/30/20. */
     extraSplit: {
       burnCoinPct: number;
       burnJustiPct: number;
       platformPct: number;
     };
-    /** Unix time in seconds. */
+    /** When the sniper fee ended: the launch time on the block rule, launch + 5 s on the window rule. */
     endsAt: number;
     feeNowPct: number;
+    /** Wallets that bought at the sniper fee (in the launch block, or the first 5 seconds on older coins). */
     buyers: number;
     boughtPctOfSupply: number;
-    /** Unsigned integer as a decimal string (may exceed 2^53). */
+    /** Fee paid above the normal rate by those trades. */
     extraFeeLamports: U64String;
   };
   totals: {
@@ -810,7 +843,7 @@ export interface TokenDetail {
     creatorClaimedLamports: U64String;
     /** Legacy (pool) coins: claimable from the pool. 0 on pad-paid coins. */
     creatorUnclaimedLamports: U64String;
-    /** Creator rate on every trade so far (normal fee only, never the sniper-window extra). */
+    /** Creator rate on every trade so far (normal fee only, never the sniper fee extra). */
     creatorEarnedLamports: U64String;
     /** Unsigned integer as a decimal string (may exceed 2^53). */
     creatorPaidLamports: U64String;
@@ -922,6 +955,8 @@ export interface TokenSummary {
   /** Meteora DAMM v2 pool after graduation. */
   dammPool: Address | null;
   fees: FeeSplit;
+  /** block: current configs. Only the launch block (the slot of the create transaction) pays 99%; every buy from the next slot pays the normal fee. window: older coins, 50% in the first second falling to the normal fee over 5 seconds. The dev buy inside the create transaction pays the normal fee under both. */
+  sniperRule: SniperRule;
   /** Share of the graduation threshold raised, 0 to 100. */
   curveProgressPct: number;
   /** SOL per whole token, from the pool's sqrt price. */

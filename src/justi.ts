@@ -190,7 +190,7 @@ export class Justi extends JustiApi {
         fetch: opts.fetch,
         timeoutMs: opts.timeoutMs,
         retries: opts.retries,
-        userAgent: "justi-sdk/0.1.0",
+        userAgent: "justi-sdk/0.1.1",
         onRateLimit: (info) => {
           if (self) self.rateLimit = info;
           opts.onRateLimit?.(info);
@@ -203,7 +203,7 @@ export class Justi extends JustiApi {
     this.VT = opts.VersionedTransaction;
   }
 
-  /** One coin with metadata, safety facts, curve, graduation, sniper window and totals. */
+  /** One coin with metadata, safety facts, curve, graduation, launch block fee (sniperRule) and totals. */
   getCoin(mint: string, opts?: RequestOptions): Promise<T.TokenDetail> {
     return this.getToken(mint, opts);
   }

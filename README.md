@@ -18,7 +18,7 @@ npm install @justifun/sdk
 ## Build a launchpad feature on Solana
 
 Add "launch a coin" to a bot, a wallet or a trading app in about ten lines. The server builds the
-create transaction with the same rules as the site (fee tiers, the 5 second sniper window, the 15%
+create transaction with the same rules as the site (fee tiers, the launch block fee, the 15%
 dev buy cap, the copy rule). Your code signs it locally and the API sends it privately through Jito.
 
 ```ts
@@ -59,7 +59,7 @@ Pass `dryRun: true` to get the signed transaction without sending it.
 ```ts
 const page = await justi.listCoins({ sort: "volume24h", limit: 20 });
 for await (const c of justi.coins({ status: "curve" })) console.log(c.ticker, c.marketCapSol);
-const coin = await justi.getCoin(mint); // metadata, safety facts, curve, graduation, sniper window
+const coin = await justi.getCoin(mint); // metadata, safety facts, curve, graduation, launch block fee
 const { trades, nextCursor } = await justi.listTrades(mint, { limit: 50 });
 const candles = await justi.getCandles(mint, { tf: "1m" });
 const protocol = await justi.getProtocol(); // program, the 20 configs, fee claimer: tag justi coins
